@@ -113,18 +113,26 @@ namespace MovieStoreApp
 
 
         {
-            Console.WriteLine("Enter movie ID: ");
-            int id = Convert.ToInt32(Console.ReadLine());
-            Console.WriteLine("Enter movie name: ");
-            string name = Console.ReadLine();
-            Console.WriteLine("Enter mOvie Genre: ");
-            string genre = Console.ReadLine();
-            Console.WriteLine("ENter Year of Release: ");
-            int yearOfRelease = Convert.ToInt32(Console.ReadLine());
+            if (movies.Count >= 5)
+            {
+                Console.WriteLine("The capacity is full. Cannot add more movies.");
+                return;
+            }
+            else
+            {
+                Console.WriteLine("Enter movie ID: ");
+                int id = Convert.ToInt32(Console.ReadLine());
+                Console.WriteLine("Enter movie name: ");
+                string name = Console.ReadLine();
+                Console.WriteLine("Enter mOvie Genre: ");
+                string genre = Console.ReadLine();
+                Console.WriteLine("ENter Year of Release: ");
+                int yearOfRelease = Convert.ToInt32(Console.ReadLine());
 
-            Movie newMovie = Movie.AddMovie(id, name, genre, yearOfRelease);
-            movies.Add(newMovie);
-            Console.WriteLine("Movie added Successfully");
+                Movie newMovie = Movie.AddMovie(id, name, genre, yearOfRelease);
+                movies.Add(newMovie);
+                Console.WriteLine("Movie added Successfully");
+            }
 
 
 
