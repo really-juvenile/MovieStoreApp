@@ -1,16 +1,25 @@
-﻿using MovieStoreApp.Models;
+﻿using System.Collections.Concurrent;
+using System.Configuration;
+using System.Text.Json;
+using MovieStoreApp.Exceptions;
+using MovieStoreApp.Models;
 namespace MovieStoreApp
 {
     internal class Program
+
     {
+
+        static string path = ConfigurationManager.AppSettings["filePath"].ToString();
         static List<Movie> movies = new List<Movie>();
         static void Main(string[] args)
         {
+
             DisplayMenu();
         }
 
         static void DisplayMenu()
         {
+            movies = DeserializeMovieStore();
             while (true)
             {
                 Console.WriteLine("Welcome to Movie Management System: \n" +
@@ -24,119 +33,186 @@ namespace MovieStoreApp
                     "7. Exit   ");
 
                 int choice = Convert.ToInt32(Console.ReadLine());
-                DoTask(choice);
-            }
-        }
+                
+                
+                    //DoTask(choice);
 
-        static void DoTask(int choice)
-        {
-            switch (choice)
+
+
+                try
+                {
+                    DoTask(choice);
+                }
+                catch (MovieStoreEmptyException me)
+                {
+                    Console.WriteLine(me.Message);
+                }
+                catch (MovieNotFoundException mf)
+                {
+                    Console.WriteLine(mf.Message);
+                }
+                catch (CapacityIsFullException ce)
+                {
+                Console.WriteLine(ce.Message); 
+                }
+                catch (ArgumentException ae)
+                {
+                    Console.WriteLine(ae.Message);
+                }
+                catch (FormatException fe)
+                {
+                    Console.WriteLine(fe.Message);
+                }
+
+            }
+
+            static void DoTask(int choice)
             {
-                case 1:
-                    AddNewMovie();
-                    break;
-                case 2:
-                    if(movies.Count == 0)
-                        Console.WriteLine("No Movise Foubd");
-                    else
-                    {
+                switch (choice)
+                {
+                    case 1:
+                        AddNewMovie();
+                        break;
+                    case 2:
+                        if (movies.Count == 0)
+                            throw new MovieStoreEmptyException("No Movies Found,Movie Store Empty");
+                        else
+                        {
                             movies.ForEach(movie => Console.WriteLine(movie));
-                    }
-                    break;
-                case 3:
-                    Movie findMovie = FindMovieById();
-                    if(findMovie != null)
-                        Console.WriteLine(findMovie);
-                    else
-                        Console.WriteLine("Movie No =t Found");
-                    break;
-                case 4:
-                    UpdateMovieName();
-                    break;
-                case 5:
-                    RemoveMovie();
-                    break;
-                case 6:
-                    if (movies.Count == 0)
-                        Console.WriteLine("List is already EMpty, nothing to clear");
-                    else
-                    {
-                        movies.Clear();
-                    }
-                    break;
-                case 7:
-                    Environment.Exit(0);
-                    break;
-                default:
-                    Console.WriteLine("Enter Valid Input");
-                    break ;
+                        }
+                        break;
+                    case 3:
+                        Movie findMovie = FindMovieById();
+                        if (findMovie != null)
+                            Console.WriteLine(findMovie);
+                        else
+                            throw new MovieNotFoundException("Movie Not Found");
+                        break;
+                    case 4:
+                        UpdateMovieName();
+                        break;
+                    case 5:
+                        RemoveMovie();
+                        break;
+                    case 6:
+                        if (movies.Count == 0)
+                            throw new MovieStoreEmptyException("Movie Store list is already Empty, nothing to clear");
+                        else
+                        {
+                            movies.Clear();
+                        }
+                        break;
+                    case 7:
+                        SerializeMovieStore();
+                        Environment.Exit(0);
+                        break;
+                    default:
+                        Console.WriteLine("Enter Valid Input");
+                        break;
 
+
+                }
+            }
+
+            static void SerializeMovieStore()
+            {
+                using (StreamWriter sw = new StreamWriter(path,false))
+                {
+                    sw.WriteLine(JsonSerializer.Serialize(movies)); //movies
+                }
+            }
+
+            static List<Movie> DeserializeMovieStore()
+            {
+                if (!File.Exists(path))
+                    return new List<Movie>();
+                using (StreamReader sr = new StreamReader(path))
+                {
+                    List<Movie> movies = JsonSerializer.Deserialize<List<Movie>>(sr.ReadToEnd());
+                    return movies;
+                }
 
             }
-        }
 
-        static void RemoveMovie()
-        {
-            Movie findMovie = FindMovieById();
-            if (findMovie != null)
-                movies.Remove(findMovie);
-            else
-                Console.WriteLine("Movie doesnt exists. Please check ID again");
-        }
-
-        static void UpdateMovieName()
-        {
-            Movie findMovie = FindMovieById();
-            if(findMovie == null)
-                Console.WriteLine("Movie doesnt exists. Please check ID again");
-            else
+            static void RemoveMovie()
             {
-                Console.WriteLine("Enter Movie name: ");
-                string name = Console.ReadLine();
-                findMovie.Name = name;
-                Console.WriteLine("Movie Updated successfully");
+                Movie findMovie = FindMovieById();
+                if (findMovie != null)
+                    movies.Remove(findMovie);
+                else
+                    Console.WriteLine("Movie doesnt exists. Please check ID again");
             }
-        }
-        static Movie FindMovieById()
-        {
-            Movie findMovie = null;
-            Console.WriteLine("Enter ID: ");
-            int id = Convert.ToInt32(Console.ReadLine());
 
-            findMovie = movies.Where(item => item.Id == id).FirstOrDefault();
-            return findMovie;
-
-        }
-        static void AddNewMovie()
-
-           
-
-
-        {
-            if (movies.Count >= 5)
+            static void UpdateMovieName()
             {
-                Console.WriteLine("The capacity is full. Cannot add more movies.");
-                return;
+                Movie findMovie = FindMovieById();
+                if (findMovie == null)
+                    Console.WriteLine("Movie doesnt exists. Please check ID again");
+                else
+                {
+                    Console.WriteLine("Enter Movie name: ");
+                    string name = Console.ReadLine();
+                    findMovie.Name = name;
+                    Console.WriteLine("Movie Updated successfully");
+                }
             }
-            else
+            static Movie FindMovieById()
             {
-                Console.WriteLine("Enter movie ID: ");
+                Movie findMovie = null;
+                Console.WriteLine("Enter ID: ");
                 int id = Convert.ToInt32(Console.ReadLine());
-                Console.WriteLine("Enter movie name: ");
-                string name = Console.ReadLine();
-                Console.WriteLine("Enter mOvie Genre: ");
-                string genre = Console.ReadLine();
-                Console.WriteLine("ENter Year of Release: ");
-                int yearOfRelease = Convert.ToInt32(Console.ReadLine());
 
-                Movie newMovie = Movie.AddMovie(id, name, genre, yearOfRelease);
-                movies.Add(newMovie);
-                Console.WriteLine("Movie added Successfully");
+                findMovie = movies.Where(item => item.Id == id).FirstOrDefault();
+                return findMovie;
+
+            }
+            static void AddNewMovie()
+
+
+
+
+            {
+                if (movies.Count >= 5)
+                {
+                    throw new CapacityIsFullException("The capacity is full. Cannot add more movies.");
+                    return;
+                }
+                else
+                {
+                    try
+                    {
+                        Console.WriteLine("Enter movie ID: ");
+                        int id = Convert.ToInt32(Console.ReadLine());
+
+                        Console.WriteLine("Enter movie name: ");
+                        string name = Console.ReadLine();
+                        if (string.IsNullOrWhiteSpace(name))
+                            throw new ArgumentException("Movie Name cannot be Empty");
+
+
+                        Console.WriteLine("Enter mOvie Genre: ");
+                        string genre = Console.ReadLine();
+                        Console.WriteLine("ENter Year of Release: ");
+                        int yearOfRelease = Convert.ToInt32(Console.ReadLine());
+
+                        Movie newMovie = Movie.AddMovie(id, name, genre, yearOfRelease);
+                        movies.Add(newMovie);
+                        Console.WriteLine("Movie added Successfully");
+                    }
+                    catch (ArgumentException ae)
+                    {
+                        Console.WriteLine(ae.Message);
+                    }
+                    catch (FormatException fe)
+                    {
+                        Console.WriteLine(fe.Message);
+                    }
+                }
+
+
+
             }
 
-
-
         }
-
     }
 }
