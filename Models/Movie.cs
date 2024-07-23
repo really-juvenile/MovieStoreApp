@@ -13,6 +13,11 @@ namespace MovieStoreApp.Models
         public string Genre { get; set; }
         public int YearOfRelease { get; set; }
 
+        public Movie()
+        {
+            
+        }
+
 
         public Movie(int id, string name, string genre)
         {
